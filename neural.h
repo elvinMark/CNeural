@@ -6,25 +6,41 @@ typedef struct node{
 	struct node* before;
 }node;
 
-typedef struct ENeuralNetwork{
+//Multilayer Perceptron Network using Root Mean Square Loss
+typedef struct EMLPNetwork{
 	node* head;
 	node* last;
-	int loss_type;
-}ENeuralNetwork;
+	int n_prev;	
+}EMLPNetwork;
 
-extern int LOSS_RMS;
-extern int LOSS_CROSS_ENTROPY;
+//Categorical Network using Cross Entropy Loss
+typedef struct ECategoricalNetwork{
+	node* head;
+	node* last;
+	int n_prev;
+}ECategoricalNetwork;
 
-//Init network
-void initNetwork(ENeuralNetwork **net,int loss_type);
-//Print Network
-void printNetwork(ENeuralNetwork *net);
-//Add new Layer
-void addLayer(ENeuralNetwork* net,int nin,int nout,int type);
-void addSoftMaxLayer(ENeuralNetwork *net,int nin);
+//Initialize MultiLayer Perceptron Nerual Network
+void initMLPNetwork(EMLPNetwork **net);
+//Structure the Network
+void addMLPInputLayer(EMLPNetwork *net,int nin);
+void addMLPLayer(EMLPNetwork *net,int nh,int type);
+void addMLPOutputLayer(EMLPNetwork *net,int nout,int type);
 //Functions
-void forwardNetwork(ENeuralNetwork *net,EMatrix* in,EMatrix **t);
-void backwardNetwork(ENeuralNetwork *net,EMatrix *err);
-void updateNetwork(ENeuralNetwork *net,double learning_rate);
-void calculateLossGrad(ENeuralNetwork *net, EMatrix *o, EMatrix *t, EMatrix **g);
-void trainNetwork(ENeuralNetwork *net, EMatrix *in, EMatrix *out,int maxIt,double learning_rate);
+void forwardMLPNetwork(EMLPNetwork *net,EMatrix* in,EMatrix **t);
+void backwardMLPNetwork(EMLPNetwork *net,EMatrix *err);
+void updateMLPNetwork(EMLPNetwork *net,double learning_rate);
+void trainMLPNetwork(EMLPNetwork *net, EMatrix *in, EMatrix *out,int maxIt,double learning_rate);
+
+
+//Initialize Categorical Nerual Network
+void initCategoricalNetwork(ECategoricalNetwork **net);
+//Structure the Network
+void addCategoricalInputLayer(ECategoricalNetwork *net,int nin);
+void addCategoricalLayer(ECategoricalNetwork *net,int nh,int type);
+void addCategoricalOutputLayer(ECategoricalNetwork *net);
+//Functions
+void forwardCategoricalNetwork(ECategoricalNetwork *net,EMatrix* in,EMatrix **t);
+void backwardCategoricalNetwork(ECategoricalNetwork *net,EMatrix *err);
+void updateCategoricalNetwork(ECategoricalNetwork *net,double learning_rate);
+void trainCategoricalNetwork(ECategoricalNetwork *net, EMatrix *in, EMatrix *out,int maxIt,double learning_rate);

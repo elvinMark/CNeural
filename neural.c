@@ -1,51 +1,45 @@
 #include "neural.h"
 
-int LOSS_RMS = 0;
-int LOSS_CROSS_ENTROPY = 1;
-
-//Init Network
-void initNetwork(ENeuralNetwork **net,int loss_type){
-	*net = (ENeuralNetwork*) malloc(sizeof(ENeuralNetwork));
-	(*net)->loss_type = loss_type;
+//Initialize MultiLayer Perceptron Nerual Network
+void initMLPNetwork(EMLPNetwork **net){
+	*net = (EMLPNetwork*) malloc(sizeof(EMLPNetwork));
 }
-//Print Network
-void printNetwork(ENeuralNetwork *net){
-	node *tmp;
-	int count=1;
-	for(tmp = net->head;tmp!=NULL;tmp = tmp->next){
-		printf("Layer %d:\n",count++);
-		printLayer(tmp->l);
-	}
+//Structure the Network
+void addMLPInputLayer(EMLPNetwork *net,int nin){
+	net->n_prev = nin;
 }
-//Add new Layer
-void addLayer(ENeuralNetwork* net,int nin,int nout,int type){
+void addMLPLayer(EMLPNetwork *net,int nh,int type){
 	if(net->head == NULL){
 		net->head = (node*) malloc(sizeof(node));
 		net->last = net->head;
-		createLayer(nin,nout,type,&(net->head->l));
+		createLayer(net->n_prev,nh,type,&(net->head->l));
+		net->n_prev = nh;
 	}
 	else{
 		net->last->next = (node*) malloc(sizeof(node));
 		net->last->next->before = net->last;
-		createLayer(nin,nout,type,&(net->last->next->l));
+		createLayer(net->n_prev,nh,type,&(net->last->next->l));
 		net->last = net->last->next;
+		net->n_prev = nh;
 	}
 }
-void addSoftMaxLayer(ENeuralNetwork *net,int nin){
+void addMLPOutputLayer(EMLPNetwork *net,int nout,int type){
 	if(net->head == NULL){
 		net->head = (node*) malloc(sizeof(node));
 		net->last = net->head;
-		createSoftMaxLayer(nin,&(net->head->l));
+		createLayer(net->n_prev,nout,type,&(net->head->l));
+		net->n_prev = nout;
 	}
 	else{
 		net->last->next = (node*) malloc(sizeof(node));
 		net->last->next->before = net->last;
-		createSoftMaxLayer(nin,&(net->last->next->l));
+		createLayer(net->n_prev,nout,type,&(net->last->next->l));
 		net->last = net->last->next;
-	}	
+		net->n_prev = nout;
+	}
 }
 //Functions
-void forwardNetwork(ENeuralNetwork *net,EMatrix* in,EMatrix **o){
+void forwardMLPNetwork(EMLPNetwork *net,EMatrix* in,EMatrix **o){
 	node* tmp;
 	EMatrix *t;
 	t = in;
@@ -53,43 +47,94 @@ void forwardNetwork(ENeuralNetwork *net,EMatrix* in,EMatrix **o){
 		forwardLayer(tmp->l,t,&t);
 	*o = t;
 }
-void backwardNetwork(ENeuralNetwork *net,EMatrix *err){
+void backwardMLPNetwork(EMLPNetwork *net,EMatrix *err){
 	EMatrix *e;
 	node *tmp;
 	e = err;
 	for(tmp = net->last;tmp!=NULL;tmp=tmp->before)
 		backwardLayer(tmp->l,e,&e);
 }
-void updateNetwork(ENeuralNetwork *net,double learning_rate){
+void updateMLPNetwork(EMLPNetwork *net,double learning_rate){
 	node *tmp;
 	for(tmp = net->head;tmp!=NULL;tmp = tmp->next)
 		updateLayer(tmp->l,learning_rate);
 }
-void calculateLossGrad(ENeuralNetwork *net, EMatrix *o, EMatrix *t, EMatrix **g){
-	int i,j;
-	switch(net->loss_type){
-		case 0:
-		diffMatrix(o,t,g);
-		break;
-		case 1:
-		createMatrix(o->rows,o->cols,g);
-		for(i=0;i<o->rows;i++){
-			for(j=0;j<o->cols;j++)
-				(*g)->data[i][j] = -t->data[0][j]/o->data[i][j];
-		}
-		break;
-		default:
-		break;
-	}
-}
-void trainNetwork(ENeuralNetwork *net, EMatrix *in, EMatrix *out,int maxIt,double learning_rate){
+void trainMLPNetwork(EMLPNetwork *net, EMatrix *in, EMatrix *out,int maxIt,double learning_rate){
 	EMatrix *o,*e;
 	node *tmp;
 	int i;
 	for(i = 0;i<maxIt;i++){
-		forwardNetwork(net,in,&o);
-		calculateLossGrad(net,o,out,&e);
-		backwardNetwork(net,e);
-		updateNetwork(net,learning_rate);
+		forwardMLPNetwork(net,in,&o);
+		diffMatrix(o,out,&e);
+		backwardMLPNetwork(net,e);
+		updateMLPNetwork(net,learning_rate);
+	}
+}
+
+//Initialize Categorical Nerual Network
+void initCategoricalNetwork(ECategoricalNetwork **net){
+	*net = (ECategoricalNetwork*) malloc(sizeof(ECategoricalNetwork));
+}
+//Structure the Network
+void addCategoricalInputLayer(ECategoricalNetwork *net,int nin){
+	net->n_prev = nin;
+}
+void addCategoricalLayer(ECategoricalNetwork *net,int nh,int type){
+	if(net->head == NULL){
+		net->head = (node*) malloc(sizeof(node));
+		net->last = net->head;
+		createLayer(net->n_prev,nh,type,&(net->head->l));
+		net->n_prev = nh;
+	}
+	else{
+		net->last->next = (node*) malloc(sizeof(node));
+		net->last->next->before = net->last;
+		createLayer(net->n_prev,nh,type,&(net->last->next->l));
+		net->last = net->last->next;
+		net->n_prev = nh;
+	}
+}
+void addCategoricalOutputLayer(ECategoricalNetwork *net){
+	if(net->head == NULL){
+		net->head = (node*) malloc(sizeof(node));
+		net->last = net->head;
+		createSoftMaxLayer(net->n_prev,&(net->head->l));
+	}
+	else{
+		net->last->next = (node*) malloc(sizeof(node));
+		net->last->next->before = net->last;
+		createSoftMaxLayer(net->n_prev,&(net->last->next->l));
+		net->last = net->last->next;
+	}
+}
+//Functions
+void forwardCategoricalNetwork(ECategoricalNetwork *net,EMatrix* in,EMatrix **o){
+	node* tmp;
+	EMatrix *t;
+	t = in;
+	for(tmp = net->head;tmp!=NULL;tmp = tmp->next)
+		forwardLayer(tmp->l,t,&t);
+	*o = t;
+}
+void backwardCategoricalNetwork(ECategoricalNetwork *net,EMatrix *err){
+	EMatrix *e;
+	node *tmp;
+	e = err;
+	for(tmp = net->last;tmp!=NULL;tmp=tmp->before)
+		backwardLayer(tmp->l,e,&e);
+}
+void updateCategoricalNetwork(ECategoricalNetwork *net,double learning_rate){
+	node *tmp;
+	for(tmp = net->head;tmp!=NULL;tmp = tmp->next)
+		updateLayer(tmp->l,learning_rate);
+}
+void trainCategoricalNetwork(ECategoricalNetwork *net, EMatrix *in, EMatrix *out,int maxIt,double learning_rate){
+	EMatrix *o,*e;
+	node *tmp;
+	int i;
+	for(i = 0;i<maxIt;i++){
+		forwardCategoricalNetwork(net,in,&o);
+		backwardCategoricalNetwork(net,out);//We are using softmax and cross entropy in the last layer
+		updateCategoricalNetwork(net,learning_rate);
 	}
 }

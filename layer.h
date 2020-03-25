@@ -9,12 +9,14 @@ typedef struct ELayer{
 	EMatrix *outData;
 	EMatrix *delta;
 	int type;
+
 }ELayer;
 
 extern int TYPE_SIGMOID;
 extern int TYPE_RELU;
 extern int TYPE_TANH;
 extern int TYPE_LINEAR;
+extern int TYPE_SOFTMAX;
 
 //Create new Layer
 void createLayer(int ni,int no,int type,ELayer **l);

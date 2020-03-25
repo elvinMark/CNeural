@@ -4,6 +4,7 @@ int TYPE_SIGMOID = 0;
 int TYPE_RELU = 1;
 int TYPE_LINEAR = 2;
 int TYPE_TANH = 3;
+int TYPE_SOFTMAX = 4;
 
 //Create new Layer
 void createLayer(int ni,int no,int type,ELayer **l){
@@ -18,6 +19,7 @@ void createSoftMaxLayer(int ni,ELayer **l){
 	(*l) = (ELayer*) malloc(sizeof(ELayer));
 	(*l)->n_inputs = ni;
 	(*l)->n_outputs = ni;
+	(*l)->type = TYPE_SOFTMAX;
 }
 //Print Layer
 void printLayer(ELayer *l){
@@ -29,23 +31,13 @@ void printLayer(ELayer *l){
 }
 //Functions 
 void forwardLayer(ELayer *l, EMatrix *in, EMatrix **out){
-	if(l->weights == NULL){
-		int i,j;
-		double s;
-		l->inData = in;
-		createMatrix(in->rows,l->n_outputs,&(l->outData));
-		for(i=0;i<in->rows;i++){
-			s = 0;
-			for(j=0;j<in->cols;j++)
-				s += in->data[i][j];
-			for(j=0;j<in->cols;j++)
-				l->outData->data[i][j] = in->data[i][j]/s;
-		}
+	EMatrix *s,*tmp,*b;
+	l->inData = in;
+	if(l->type == TYPE_SOFTMAX){
+		actFunSoftMaxMatrix(in,&(l->outData));
 		*out = l->outData;
 		return;
 	}
-	EMatrix *s,*tmp,*b;
-	l->inData = in;
 	dotMatrix(in,l->weights,&s);
 	createMatrix(in->rows,1,&tmp);
 	onesMatrix(tmp);
@@ -70,14 +62,21 @@ void forwardLayer(ELayer *l, EMatrix *in, EMatrix **out){
 	*out = l->outData;
 }
 void backwardLayer(ELayer *l, EMatrix *err, EMatrix **propErr){
-	if(l->weights == NULL){
-		EMatrix *t;
-		actFunSigmoidMatrix(l->outData,&t,true);
-		timesMatrix(err,t,&(l->delta));
-		*propErr = l->delta; 
+	EMatrix *s,*t;
+	int i,j;
+	s = err;
+	if(l->type == TYPE_SOFTMAX){
+		createMatrix(err->rows,l->n_outputs,propErr);
+		for(i=0;i<err->rows;i++){
+			for(j=0;j<l->n_outputs;j++){
+				if(s->data[i][0] == j)
+					(*propErr)->data[i][j] = (l->outData->data[i][j] - 1);
+				else
+					(*propErr)->data[i][j] = l->outData->data[i][j];
+			}
+		}
 		return;
 	}
-	EMatrix *s,*t;
 	switch(l->type){
 		case 0:
 		actFunSigmoidMatrix(l->outData,&s,true);
@@ -99,11 +98,10 @@ void backwardLayer(ELayer *l, EMatrix *err, EMatrix **propErr){
 	dotMatrix(l->delta,t,propErr);
 }
 void updateLayer(ELayer *l,double learning_rate){
-	if(l->weights == NULL){
-		return;
-	}
 	EMatrix *s,*t;
 	EMatrix *ones;
+	if(l->type == TYPE_SOFTMAX)
+		return;
 	transposeMatrix(l->inData,&t);
 	createMatrix(1,l->inData->rows,&ones);
 	onesMatrix(ones);

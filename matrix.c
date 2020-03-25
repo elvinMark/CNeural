@@ -201,3 +201,16 @@ void actFunSelfTanhMatrix(EMatrix *m, bool diff){
 			m->data[i][j] = actFunTanh(m->data[i][j],diff);
 	}
 }
+
+void actFunSoftMaxMatrix(EMatrix *m, EMatrix **t){
+	int i,j;
+	double s;
+	createMatrix(m->rows,m->cols,t);
+	for(i = 0;i<m->rows;i++){
+		s = 0;
+		for(j=0;j<m->cols;j++)
+			s += exp(m->data[i][j]);
+		for(j=0;j<m->cols;j++)
+			(*t)->data[i][j] = exp(m->data[i][j])/s;
+	}
+}
